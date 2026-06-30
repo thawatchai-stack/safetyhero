@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,101 +8,475 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --glow-blue: #3b82f6; --glow-green: #10b981; --glow-red: #ef4444; --glow-yellow: #f59e0b; }
-        body { font-family: 'Prompt', sans-serif; background: #060d1a; color: #f1f5f9; overflow-x: hidden; min-height: 100vh; }
+        :root {
+            --glow-blue: #3b82f6;
+            --glow-green: #10b981;
+            --glow-red: #ef4444;
+            --glow-yellow: #f59e0b;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #060d1a;
+            color: #f1f5f9;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
         /* Background stars */
-        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.08) 0%, transparent 60%); pointer-events: none; z-index: 0; }
-        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake { 10%,90%{transform:translate3d(-2px,0,0)} 20%,80%{transform:translate3d(4px,0,0)} 30%,50%,70%{transform:translate3d(-6px,0,0)} 40%,60%{transform:translate3d(6px,0,0)} }
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16,1,0.3,1); }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .slide-up { animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1); }
-        @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-        .pop-in { animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes popIn { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-2px, 0, 0)
+            }
+
+            20%,
+            80% {
+                transform: translate3d(4px, 0, 0)
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-6px, 0, 0)
+            }
+
+            40%,
+            60% {
+                transform: translate3d(6px, 0, 0)
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(0.97)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1)
+            }
+        }
+
+        .slide-up {
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .pop-in {
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.5)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
         /* Cards */
-        .game-card { transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.1s; cursor: pointer; border-bottom: 3px solid rgba(0,0,0,0.4); position: relative; overflow: hidden; }
-        .game-card::before { content:''; position:absolute; inset:0; background: linear-gradient(135deg,rgba(255,255,255,0.05),transparent); pointer-events:none; }
-        .game-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 16px 32px -8px rgba(0,0,0,0.6), 0 0 20px rgba(59,130,246,0.2); background-color: #334155 !important; }
-        .game-card:active { transform: scale(0.97); }
-        .game-card.correct { background: linear-gradient(135deg,#065f46,#059669) !important; color: white !important; border-color: #064e3b !important; box-shadow: 0 0 30px rgba(16,185,129,0.5) !important; animation: correctPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
-        .game-card.wrong { background: linear-gradient(135deg,#7f1d1d,#dc2626) !important; color: white !important; border-color: #7f1d1d !important; box-shadow: 0 0 30px rgba(239,68,68,0.4) !important; }
+        .game-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.1s;
+            cursor: pointer;
+            border-bottom: 3px solid rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .game-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.2);
+            background-color: #334155 !important;
+        }
+
+        .game-card:active {
+            transform: scale(0.97);
+        }
+
+        .game-card.correct {
+            background: linear-gradient(135deg, #065f46, #059669) !important;
+            color: white !important;
+            border-color: #064e3b !important;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.5) !important;
+            animation: correctPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes correctPop {
+            0% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.08)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        .game-card.wrong {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626) !important;
+            color: white !important;
+            border-color: #7f1d1d !important;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.4) !important;
+        }
+
         /* Scoreboard glow */
-        .score-glow { text-shadow: 0 0 20px var(--glow-yellow), 0 0 40px rgba(245,158,11,0.3); }
+        .score-glow {
+            text-shadow: 0 0 20px var(--glow-yellow), 0 0 40px rgba(245, 158, 11, 0.3);
+        }
+
         /* Timer bar */
-        .timer-bar-fill { transition: width 0.1s linear; }
+        .timer-bar-fill {
+            transition: width 0.1s linear;
+        }
+
         /* Input */
-        .input-field { width:100%; padding:12px 16px; border-radius:12px; border:2px solid #1e3a5f; background:#0f1f35; color:white; outline:none; transition:border-color 0.3s, box-shadow 0.3s; font-family:'Prompt',sans-serif; }
-        .input-field:focus { border-color:#3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #1e3a5f;
+            background: #0f1f35;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
         /* Leaderboard */
-        .leaderboard-table th { text-align:left; padding:12px; background:#0f1f35; color:#64748b; font-weight:600; }
-        .leaderboard-table td { padding:12px; border-bottom:1px solid #1e293b; }
-        .leaderboard-table tr:last-child td { border-bottom:none; }
-        .leaderboard-table tr:hover td { background:rgba(59,130,246,0.05); }
-        .rank-1 { color:#fbbf24; font-weight:bold; text-shadow:0 0 8px rgba(251,191,36,0.5); }
-        .rank-2 { color:#94a3b8; font-weight:bold; }
-        .rank-3 { color:#cd7c2f; font-weight:bold; }
+        .leaderboard-table th {
+            text-align: left;
+            padding: 12px;
+            background: #0f1f35;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .leaderboard-table td {
+            padding: 12px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leaderboard-table tr:hover td {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .rank-1 {
+            color: #fbbf24;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+        }
+
+        .rank-2 {
+            color: #94a3b8;
+            font-weight: bold;
+        }
+
+        .rank-3 {
+            color: #cd7c2f;
+            font-weight: bold;
+        }
+
         /* Glass card */
-        .glass { background: rgba(15,30,55,0.85); border:1px solid rgba(59,130,246,0.15); backdrop-filter: blur(12px); }
+        .glass {
+            background: rgba(15, 30, 55, 0.85);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            backdrop-filter: blur(12px);
+        }
+
         /* Combo badge */
-        .combo-badge { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:100; pointer-events:none; font-size:2rem; font-weight:800; color:#fbbf24; text-shadow:0 0 20px #f59e0b,0 0 40px #f59e0b; animation:comboPop 1s ease forwards; }
-        @keyframes comboPop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} 70%{opacity:1;transform:translate(-50%,-80%) scale(1)} 100%{opacity:0;transform:translate(-50%,-100%) scale(0.8)} }
+        .combo-badge {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            pointer-events: none;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fbbf24;
+            text-shadow: 0 0 20px #f59e0b, 0 0 40px #f59e0b;
+            animation: comboPop 1s ease forwards;
+        }
+
+        @keyframes comboPop {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5)
+            }
+
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.3)
+            }
+
+            70% {
+                opacity: 1;
+                transform: translate(-50%, -80%) scale(1)
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -100%) scale(0.8)
+            }
+        }
+
         /* Score pop */
-        .score-pop { position:fixed; pointer-events:none; font-weight:800; font-size:1.4rem; z-index:99; animation:scorePop 1.2s ease forwards; }
-        @keyframes scorePop { 0%{opacity:0;transform:translateY(0) scale(0.5)} 20%{opacity:1;transform:translateY(-10px) scale(1.1)} 80%{opacity:1;transform:translateY(-50px) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.9)} }
+        .score-pop {
+            position: fixed;
+            pointer-events: none;
+            font-weight: 800;
+            font-size: 1.4rem;
+            z-index: 99;
+            animation: scorePop 1.2s ease forwards;
+        }
+
+        @keyframes scorePop {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0.5)
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateY(-10px) scale(1.1)
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateY(-50px) scale(1)
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(0.9)
+            }
+        }
+
         /* Question card pulse on load */
-        .q-pulse { animation: qPulse 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes qPulse { from{transform:scale(0.95);opacity:0} to{transform:scale(1);opacity:1} }
+        .q-pulse {
+            animation: qPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes qPulse {
+            from {
+                transform: scale(0.95);
+                opacity: 0
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
         /* Streak fire */
-        .streak-fire { animation: streakFire 0.5s ease; color:#f97316; }
-        @keyframes streakFire { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4) rotate(5deg)} }
+        .streak-fire {
+            animation: streakFire 0.5s ease;
+            color: #f97316;
+        }
+
+        @keyframes streakFire {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.4) rotate(5deg)
+            }
+        }
+
         /* Blob bg */
-        @keyframes blob { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(20px,-20px) scale(1.1)} 66%{transform:translate(-15px,15px) scale(0.95)} }
-        .animate-blob { animation: blob 8s ease-in-out infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
+        @keyframes blob {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1)
+            }
+
+            33% {
+                transform: translate(20px, -20px) scale(1.1)
+            }
+
+            66% {
+                transform: translate(-15px, 15px) scale(0.95)
+            }
+        }
+
+        .animate-blob {
+            animation: blob 8s ease-in-out infinite;
+        }
+
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+
         /* Timer urgent */
-        .timer-urgent { animation: timerPulse 0.5s ease infinite alternate; }
-        @keyframes timerPulse { from{opacity:1} to{opacity:0.6} }
+        .timer-urgent {
+            animation: timerPulse 0.5s ease infinite alternate;
+        }
+
+        @keyframes timerPulse {
+            from {
+                opacity: 1
+            }
+
+            to {
+                opacity: 0.6
+            }
+        }
+
         /* Level badge */
-        .level-badge { background: linear-gradient(135deg,#1e3a6e,#1d4ed8); border:1px solid rgba(59,130,246,0.4); }
+        .level-badge {
+            background: linear-gradient(135deg, #1e3a6e, #1d4ed8);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
         /* Btn glow */
-        .btn-primary { background: linear-gradient(135deg,#1d4ed8,#3b82f6); transition:all 0.2s; }
-        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(59,130,246,0.4); }
-        .btn-success { background: linear-gradient(135deg,#065f46,#10b981); transition:all 0.2s; }
-        .btn-success:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(16,185,129,0.4); }
-        .btn-dark { background:rgba(15,25,45,0.8); border:1px solid rgba(59,130,246,0.2); transition:all 0.2s; }
-        .btn-dark:hover { transform:translateY(-2px); background:rgba(30,58,92,0.8); }
+        .btn-primary {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #065f46, #10b981);
+            transition: all 0.2s;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-dark {
+            background: rgba(15, 25, 45, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.2s;
+        }
+
+        .btn-dark:hover {
+            transform: translateY(-2px);
+            background: rgba(30, 58, 92, 0.8);
+        }
+
         /* Screen container */
-        .screen-card { border-radius:1.5rem; padding:2rem; box-shadow:0 25px 50px rgba(0,0,0,0.5),0 0 0 1px rgba(59,130,246,0.1),inset 0 1px 0 rgba(255,255,255,0.05); }
+        .screen-card {
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
         /* Spin */
-        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg)
+            }
+        }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col items-center justify-center relative py-4">
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm">
+    <div id="loading-overlay"
+        class="hidden fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm">
         <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-blue-400 font-bold animate-pulse text-lg tracking-widest">กำลังเชื่อมต่อ...</p>
     </div>
 
     <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-15 animate-blob"></div>
-        <div class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-violet-600 rounded-full mix-blend-screen filter blur-[100px] opacity-15 animate-blob animation-delay-2000"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-blob animation-delay-4000"></div>
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-15 animate-blob">
+        </div>
+        <div
+            class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-violet-600 rounded-full mix-blend-screen filter blur-[100px] opacity-15 animate-blob animation-delay-2000">
+        </div>
+        <div
+            class="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] bg-cyan-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-blob animation-delay-4000">
+        </div>
         <!-- Grid overlay -->
-        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px);background-size:40px 40px;"></div>
+        <div
+            style="position:absolute;inset:0;background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px);background-size:40px 40px;">
+        </div>
     </div>
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="z-10 w-full max-w-md glass screen-card text-center fade-in mx-4">
         <div class="mb-5 flex justify-center">
-            <div style="background:radial-gradient(circle,rgba(59,130,246,0.3),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.3);" class="p-5 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(59,130,246,0.3),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.3);"
+                class="p-5 rounded-full">
                 <i data-lucide="shield-check" class="w-14 h-14 text-blue-400"></i>
             </div>
         </div>
@@ -109,64 +484,94 @@
         <h2 class="text-3xl font-bold text-white mb-1">เข้าสู่ระบบ</h2>
         <p class="text-slate-500 mb-6 text-sm">School Safety Hero — บันทึกด้วย localStorage</p>
         <div class="space-y-3 mb-6">
-            <div class="text-left"><label class="text-xs font-bold text-blue-400 ml-1 uppercase tracking-wider">เบอร์โทรศัพท์</label><input type="tel" id="login-phone" class="input-field mt-1" placeholder="กรอกเบอร์โทรศัพท์" maxlength="10" onkeydown="if(event.key==='Enter')handleLogin()"></div>
-            <button onclick="handleLogin()" class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="log-in" class="w-4 h-4"></i> เข้าเล่นเกม</button>
+            <div class="text-left"><label
+                    class="text-xs font-bold text-blue-400 ml-1 uppercase tracking-wider">เบอร์โทรศัพท์</label><input
+                    type="tel" id="login-phone" class="input-field mt-1" placeholder="กรอกเบอร์โทรศัพท์" maxlength="10"
+                    onkeydown="if(event.key==='Enter')handleLogin()"></div>
+            <button onclick="handleLogin()"
+                class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2"><i
+                    data-lucide="log-in" class="w-4 h-4"></i> เข้าเล่นเกม</button>
         </div>
         <div style="border-top:1px solid rgba(59,130,246,0.15);" class="pt-4">
             <p class="text-slate-500 text-sm mb-2">ยังไม่เคยเล่นใช่ไหม?</p>
-            <button onclick="showRegister()" class="text-blue-400 font-bold hover:text-blue-300 transition">✦ สมัครสมาชิกใหม่</button>
+            <button onclick="showRegister()" class="text-blue-400 font-bold hover:text-blue-300 transition">✦
+                สมัครสมาชิกใหม่</button>
         </div>
     </div>
 
     <!-- REGISTER SCREEN -->
     <div id="register-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center fade-in mx-4">
         <div class="mb-5 flex justify-center">
-            <div style="background:radial-gradient(circle,rgba(16,185,129,0.3),rgba(16,185,129,0.05));border:2px solid rgba(16,185,129,0.3);" class="p-5 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(16,185,129,0.3),rgba(16,185,129,0.05));border:2px solid rgba(16,185,129,0.3);"
+                class="p-5 rounded-full">
                 <i data-lucide="user-plus" class="w-14 h-14 text-emerald-400"></i>
             </div>
         </div>
         <h2 class="text-3xl font-bold text-white mb-6">สมัครสมาชิก</h2>
         <div class="space-y-3 mb-6">
-            <div class="text-left"><label class="text-xs font-bold text-emerald-400 ml-1 uppercase tracking-wider">ชื่อเล่น (สำหรับแสดงผล)</label><input type="text" id="reg-name" class="input-field mt-1" placeholder="เช่น น้องมีดี" maxlength="15"></div>
-            <div class="text-left"><label class="text-xs font-bold text-emerald-400 ml-1 uppercase tracking-wider">เบอร์โทรศัพท์</label><input type="tel" id="reg-phone" class="input-field mt-1" placeholder="กรอกเบอร์โทรศัพท์" maxlength="10"></div>
-            <button onclick="handleRegister()" class="btn-success w-full text-white font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> ยืนยันการสมัคร</button>
+            <div class="text-left"><label
+                    class="text-xs font-bold text-emerald-400 ml-1 uppercase tracking-wider">ชื่อเล่น
+                    (สำหรับแสดงผล)</label><input type="text" id="reg-name" class="input-field mt-1"
+                    placeholder="เช่น น้องมีดี" maxlength="15"></div>
+            <div class="text-left"><label
+                    class="text-xs font-bold text-emerald-400 ml-1 uppercase tracking-wider">เบอร์โทรศัพท์</label><input
+                    type="tel" id="reg-phone" class="input-field mt-1" placeholder="กรอกเบอร์โทรศัพท์" maxlength="10">
+            </div>
+            <button onclick="handleRegister()"
+                class="btn-success w-full text-white font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2"><i
+                    data-lucide="check-circle" class="w-4 h-4"></i> ยืนยันการสมัคร</button>
         </div>
-        <button onclick="showLogin()" class="text-slate-500 hover:text-slate-300 text-sm transition">← กลับหน้าเข้าสู่ระบบ</button>
+        <button onclick="showLogin()" class="text-slate-500 hover:text-slate-300 text-sm transition">←
+            กลับหน้าเข้าสู่ระบบ</button>
     </div>
 
     <!-- START SCREEN -->
     <div id="start-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center fade-in mx-4">
-        <div class="flex justify-end mb-2"><button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition"><i data-lucide="log-out" class="w-3 h-3"></i> ออกจากระบบ</button></div>
+        <div class="flex justify-end mb-2"><button onclick="handleLogout()"
+                class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition"><i
+                    data-lucide="log-out" class="w-3 h-3"></i> ออกจากระบบ</button></div>
         <div class="mb-3 flex justify-center">
-            <div style="background:radial-gradient(circle,rgba(59,130,246,0.25),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.35);" class="p-6 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(59,130,246,0.25),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.35);"
+                class="p-6 rounded-full">
                 <i data-lucide="shield-check" class="w-16 h-16 text-blue-400"></i>
             </div>
         </div>
         <div class="text-xs font-bold tracking-widest text-blue-500 uppercase mb-1">⚡ SAFETY QUEST</div>
-        <h1 id="title-click-target" class="text-3xl font-extrabold text-white mb-1" style="cursor:default">School Safety Hero</h1>
+        <h1 id="title-click-target" class="text-3xl font-extrabold text-white mb-1" style="cursor:default">School Safety
+            Hero</h1>
         <p id="welcome-msg" class="text-base text-blue-400 font-semibold mb-1">สวัสดี!</p>
         <div class="flex items-center justify-center gap-2 mb-4">
-            <span class="text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-800/50 px-3 py-1 rounded-full">💾 บันทึกข้อมูลในเครื่อง</span>
+            <span
+                class="text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-800/50 px-3 py-1 rounded-full">💾
+                บันทึกข้อมูลในเครื่อง</span>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.03));border:1px solid rgba(245,158,11,0.2);" class="p-4 rounded-xl mb-4">
+        <div style="background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.03));border:1px solid rgba(245,158,11,0.2);"
+            class="p-4 rounded-xl mb-4">
             <p class="text-xs text-yellow-500 font-bold uppercase tracking-wider">★ คะแนนสูงสุดของคุณ ★</p>
             <p id="user-high-score" class="text-4xl font-extrabold text-yellow-400 score-glow mt-1">0</p>
         </div>
         <div class="space-y-3">
-            <button onclick="showLevelSelect()" class="btn-primary w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-lg">
+            <button onclick="showLevelSelect()"
+                class="btn-primary w-full text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-lg">
                 <i data-lucide="map" class="w-5 h-5"></i> 🗺️ เลือกด่าน!
             </button>
-            <button onclick="showLeaderboard()" class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2">
+            <button onclick="showLeaderboard()"
+                class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2">
                 <i data-lucide="trophy" class="w-4 h-4 text-yellow-400"></i> ดูอันดับยอดเยี่ยม
             </button>
         </div>
     </div>
 
     <!-- LEVEL SELECT SCREEN -->
-    <div id="level-select-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center mx-4 relative fade-in max-h-[85vh] overflow-y-auto" style="scrollbar-width: thin;">
-        <button onclick="goToStartScreen()" class="absolute top-4 left-4 p-2 bg-slate-800/50 rounded-full hover:bg-slate-700 text-slate-300 transition" title="กลับหน้าหลัก"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+    <div id="level-select-screen"
+        class="hidden z-10 w-full max-w-md glass screen-card text-center mx-4 relative fade-in max-h-[85vh] overflow-y-auto"
+        style="scrollbar-width: thin;">
+        <button onclick="goToStartScreen()"
+            class="absolute top-4 left-4 p-2 bg-slate-800/50 rounded-full hover:bg-slate-700 text-slate-300 transition"
+            title="กลับหน้าหลัก"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
         <div class="mb-3 flex justify-center mt-2">
-            <div style="background:radial-gradient(circle,rgba(59,130,246,0.3),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.3);" class="p-4 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(59,130,246,0.3),rgba(59,130,246,0.05));border:2px solid rgba(59,130,246,0.3);"
+                class="p-4 rounded-full">
                 <i data-lucide="map" class="w-10 h-10 text-blue-400"></i>
             </div>
         </div>
@@ -177,19 +582,45 @@
     </div>
 
     <!-- LEADERBOARD SCREEN -->
-    <div id="leaderboard-screen" class="hidden z-10 w-full max-w-lg bg-slate-800 p-6 rounded-3xl shadow-2xl shadow-black/50 mx-4 border border-slate-700 flex flex-col h-[80vh]">
-        <div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold text-white flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-400"></i> อันดับยอดเยี่ยม</h2><button onclick="goToStartScreen()" class="p-2 bg-slate-700 rounded-full hover:bg-slate-600 text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <div id="leaderboard-screen"
+        class="hidden z-10 w-full max-w-lg bg-slate-800 p-6 rounded-3xl shadow-2xl shadow-black/50 mx-4 border border-slate-700 flex flex-col h-[80vh]">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-2"><i data-lucide="trophy"
+                    class="text-yellow-400"></i> อันดับยอดเยี่ยม</h2><button onclick="goToStartScreen()"
+                class="p-2 bg-slate-700 rounded-full hover:bg-slate-600 text-white"><i data-lucide="x"
+                    class="w-5 h-5"></i></button>
+        </div>
         <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
-            <button onclick="filterLeaderboard('all')" id="tab-all" class="lb-tab bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">รวมทุกด่าน</button>
-            <button onclick="filterLeaderboard(0)" id="tab-0" class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน 1</button>
-            <button onclick="filterLeaderboard(1)" id="tab-1" class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน 2</button>
-            <button onclick="filterLeaderboard(2)" id="tab-2" class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน 3</button>
-            <button onclick="filterLeaderboard(3)" id="tab-3" class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน 4</button>
-            <button onclick="filterLeaderboard(4)" id="tab-4" class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน 5</button>
+            <button onclick="filterLeaderboard('all')" id="tab-all"
+                class="lb-tab bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">รวมทุกด่าน</button>
+            <button onclick="filterLeaderboard(0)" id="tab-0"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                1</button>
+            <button onclick="filterLeaderboard(1)" id="tab-1"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                2</button>
+            <button onclick="filterLeaderboard(2)" id="tab-2"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                3</button>
+            <button onclick="filterLeaderboard(3)" id="tab-3"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                4</button>
+            <button onclick="filterLeaderboard(4)" id="tab-4"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                5</button>
+            <button onclick="filterLeaderboard(5)" id="tab-5"
+                class="lb-tab bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">ด่าน
+                6</button>
         </div>
         <div class="flex-grow overflow-y-auto bg-slate-900/50 rounded-xl border border-slate-700">
             <table class="w-full leaderboard-table text-sm text-left text-slate-300">
-                <thead class="sticky top-0 z-10"><tr><th class="w-12 text-center">#</th><th>ชื่อผู้เล่น</th><th class="text-right">คะแนน</th></tr></thead>
+                <thead class="sticky top-0 z-10">
+                    <tr>
+                        <th class="w-12 text-center">#</th>
+                        <th>ชื่อผู้เล่น</th>
+                        <th class="text-right">คะแนน</th>
+                    </tr>
+                </thead>
                 <tbody id="leaderboard-body"></tbody>
             </table>
         </div>
@@ -198,15 +629,19 @@
 
     <!-- LEVEL INTRO SCREEN -->
     <div id="level-intro-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center mx-4 pop-in relative">
-        <button onclick="showLevelSelect()" class="absolute top-4 left-4 p-2 bg-slate-800/50 rounded-full hover:bg-slate-700 text-slate-300 transition" title="กลับเลือกด่าน"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+        <button onclick="showLevelSelect()"
+            class="absolute top-4 left-4 p-2 bg-slate-800/50 rounded-full hover:bg-slate-700 text-slate-300 transition"
+            title="กลับเลือกด่าน"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
         <div class="text-xs font-bold tracking-widest text-blue-500 uppercase mb-2 mt-4">⚔️ ภารกิจใหม่</div>
         <h2 id="level-title" class="text-2xl font-extrabold text-white mb-4">ด่านที่ 1</h2>
         <div id="level-icon" class="mb-4 flex justify-center"></div>
         <p id="level-desc" class="text-base text-slate-300 mb-6 leading-relaxed">รายละเอียด...</p>
-        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);" class="p-3 rounded-xl mb-6 text-xs text-slate-400">
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);"
+            class="p-3 rounded-xl mb-6 text-xs text-slate-400">
             💡 ยิ่งตอบเร็ว → ได้โบนัสคะแนนเพิ่ม! &nbsp;|&nbsp; ตอบถูกติดต่อกัน → COMBO!
         </div>
-        <button onclick="startLevel()" class="btn-success w-full text-white font-extrabold py-4 px-6 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2">
+        <button onclick="startLevel()"
+            class="btn-success w-full text-white font-extrabold py-4 px-6 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2">
             ⚡ ลุยเลย!
         </button>
     </div>
@@ -215,31 +650,40 @@
     <div id="game-screen" class="hidden z-10 w-full max-w-xl flex flex-col p-3" style="min-height:100vh;">
         <!-- Top Nav -->
         <div class="flex justify-between items-center mb-2 px-1">
-            <button onclick="if(confirm('ย้อนกลับจะทำให้สูญเสียคะแนนด่านนี้นะ แน่ใจหรือไม่?')){ stopTimer(); showLevelSelect(); }" class="p-2 bg-slate-800/80 rounded-xl hover:bg-slate-700 text-slate-300 transition text-xs flex items-center gap-1 border border-slate-700">
+            <button
+                onclick="if(confirm('ย้อนกลับจะทำให้สูญเสียคะแนนด่านนี้นะ แน่ใจหรือไม่?')){ stopTimer(); showLevelSelect(); }"
+                class="p-2 bg-slate-800/80 rounded-xl hover:bg-slate-700 text-slate-300 transition text-xs flex items-center gap-1 border border-slate-700">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> ถอยทัพ
             </button>
-            <button id="sound-toggle-btn" onclick="toggleSound()" class="p-2 bg-slate-800/80 rounded-xl hover:bg-slate-700 text-slate-300 transition text-xs flex items-center gap-1 border border-slate-700">
+            <button id="sound-toggle-btn" onclick="toggleSound()"
+                class="p-2 bg-slate-800/80 rounded-xl hover:bg-slate-700 text-slate-300 transition text-xs flex items-center gap-1 border border-slate-700">
                 <i data-lucide="volume-2" class="w-4 h-4"></i> เสียง: เปิด
             </button>
         </div>
         <!-- HUD -->
         <div class="glass rounded-2xl p-3 mb-3" style="border-color:rgba(59,130,246,0.2);">
             <div class="flex justify-between items-center mb-2">
-                <span id="game-level-indicator" class="font-bold text-blue-400 text-sm level-badge px-3 py-1 rounded-lg">ด่าน 1/5</span>
+                <span id="game-level-indicator"
+                    class="font-bold text-blue-400 text-sm level-badge px-3 py-1 rounded-lg">ด่าน 1/5</span>
                 <div class="flex items-center gap-3">
-                    <div id="combo-display" class="hidden items-center gap-1 bg-orange-900/40 px-2 py-0.5 rounded-lg border border-orange-700/40">
+                    <div id="combo-display"
+                        class="hidden items-center gap-1 bg-orange-900/40 px-2 py-0.5 rounded-lg border border-orange-700/40">
                         <span class="text-orange-400 text-xs font-bold">🔥</span>
                         <span id="combo-count" class="font-extrabold text-orange-400 text-sm">x2</span>
                     </div>
-                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);">
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg"
+                        style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);">
                         <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-yellow-400"></i>
                         <span id="score-display" class="font-extrabold text-yellow-400 text-lg">0</span>
                     </div>
                 </div>
             </div>
             <div class="relative w-full h-5 rounded-full overflow-hidden" style="background:rgba(30,41,59,0.8);">
-                <div id="timer-bar" class="absolute top-0 left-0 h-full timer-bar-fill" style="width:100%;background:linear-gradient(90deg,#10b981,#3b82f6);"></div>
-                <p id="timer-text" class="absolute inset-0 text-[11px] flex items-center justify-center font-bold text-white drop-shadow">15s</p>
+                <div id="timer-bar" class="absolute top-0 left-0 h-full timer-bar-fill"
+                    style="width:100%;background:linear-gradient(90deg,#10b981,#3b82f6);"></div>
+                <p id="timer-text"
+                    class="absolute inset-0 text-[11px] flex items-center justify-center font-bold text-white drop-shadow">
+                    15s</p>
             </div>
             <div class="flex justify-between text-xs mt-1.5">
                 <span class="text-slate-500">⬛ ความก้าวหน้า</span>
@@ -247,8 +691,10 @@
             </div>
         </div>
         <!-- Question -->
-        <div id="question-card" class="glass rounded-2xl p-5 mb-3 flex flex-col items-center text-center q-pulse" style="border-color:rgba(59,130,246,0.2);">
-            <div id="q-icon-container" class="p-4 rounded-full mb-3" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.25);">
+        <div id="question-card" class="glass rounded-2xl p-5 mb-3 flex flex-col items-center text-center q-pulse"
+            style="border-color:rgba(59,130,246,0.2);">
+            <div id="q-icon-container" class="p-4 rounded-full mb-3"
+                style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.25);">
                 <i id="q-icon" data-lucide="help-circle" class="w-12 h-12 text-blue-300"></i>
             </div>
             <h3 id="q-text" class="text-xl font-extrabold text-white mb-1 leading-tight">คำถาม</h3>
@@ -260,13 +706,15 @@
     <!-- LEVEL COMPLETE SCREEN -->
     <div id="level-complete-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center mx-4 pop-in">
         <div class="mb-3 flex justify-center">
-            <div style="background:radial-gradient(circle,rgba(245,158,11,0.3),rgba(245,158,11,0.05));border:2px solid rgba(245,158,11,0.4);" class="p-5 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(245,158,11,0.3),rgba(245,158,11,0.05));border:2px solid rgba(245,158,11,0.4);"
+                class="p-5 rounded-full">
                 <i data-lucide="trophy" class="w-16 h-16 text-yellow-400"></i>
             </div>
         </div>
         <div class="text-xs font-bold tracking-widest text-yellow-500 uppercase mb-1">✅ ภารกิจสำเร็จ!</div>
         <h2 class="text-2xl font-extrabold text-white mb-4">ผ่านด่านแล้ว!</h2>
-        <div style="background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.25);" class="p-4 rounded-xl mb-2">
+        <div style="background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.25);"
+            class="p-4 rounded-xl mb-2">
             <p class="text-xs text-blue-400 uppercase tracking-wider font-bold">คะแนนด่านนี้</p>
             <p id="level-score" class="text-5xl font-extrabold text-blue-300 score-glow mt-1">0</p>
         </div>
@@ -274,31 +722,41 @@
             <span class="text-sm font-bold text-yellow-400">🌟 เพอร์เฟกต์! ตอบถูกทุกข้อ!</span>
         </div>
         <div class="space-y-2 mt-3">
-            <button id="next-level-btn" onclick="nextLevel()" class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2">ไปด่านถัดไป <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-            <button onclick="showLeaderboard()" class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> ดูอันดับ</button>
+            <button id="next-level-btn" onclick="nextLevel()"
+                class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2">ไปด่านถัดไป
+                <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+            <button onclick="showLeaderboard()"
+                class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2"><i
+                    data-lucide="bar-chart-2" class="w-4 h-4"></i> ดูอันดับ</button>
         </div>
     </div>
 
     <!-- END SCREEN -->
     <div id="end-screen" class="hidden z-10 w-full max-w-md glass screen-card text-center mx-4 pop-in">
         <div class="mb-3 flex justify-center">
-            <div style="background:radial-gradient(circle,rgba(245,158,11,0.3),rgba(245,158,11,0.05));border:2px solid rgba(245,158,11,0.4);animation:streakFire 2s ease infinite;" class="p-5 rounded-full">
+            <div style="background:radial-gradient(circle,rgba(245,158,11,0.3),rgba(245,158,11,0.05));border:2px solid rgba(245,158,11,0.4);animation:streakFire 2s ease infinite;"
+                class="p-5 rounded-full">
                 <i data-lucide="crown" class="w-16 h-16 text-yellow-400"></i>
             </div>
         </div>
         <div class="text-xs font-bold tracking-widest text-yellow-500 uppercase mb-1">🏆 GAME CLEAR!</div>
         <h2 class="text-3xl font-extrabold text-white mb-1">ยอดเยี่ยมมาก!</h2>
         <p class="text-slate-400 mb-4 text-sm">คุณคือผู้เชี่ยวชาญด้านความปลอดภัย!</p>
-        <div style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.3);" class="p-5 rounded-xl mb-2">
+        <div style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.03));border:1px solid rgba(59,130,246,0.3);"
+            class="p-5 rounded-xl mb-2">
             <p class="text-xs text-blue-400 uppercase tracking-wider font-bold">คะแนนรวมรอบนี้</p>
             <p id="final-score" class="text-5xl font-extrabold text-blue-300 score-glow mt-1">0</p>
         </div>
-        <div id="new-record-badge" class="hidden p-3 rounded-xl mb-3" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);">
+        <div id="new-record-badge" class="hidden p-3 rounded-xl mb-3"
+            style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);">
             <p class="text-yellow-400 font-extrabold">🏆 สถิติใหม่! คุณทำลายสถิติของตัวเอง!</p>
         </div>
         <div class="space-y-2 mt-3">
-            <button onclick="showLeaderboard()" class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2"><i data-lucide="trophy" class="w-4 h-4"></i> ดูอันดับยอดเยี่ยม</button>
-            <button onclick="goToStartScreen()" class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl">กลับหน้าหลัก</button>
+            <button onclick="showLeaderboard()"
+                class="btn-primary w-full text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2"><i
+                    data-lucide="trophy" class="w-4 h-4"></i> ดูอันดับยอดเยี่ยม</button>
+            <button onclick="goToStartScreen()"
+                class="btn-dark w-full text-white font-bold py-3 px-6 rounded-xl">กลับหน้าหลัก</button>
         </div>
     </div>
 
@@ -307,14 +765,14 @@
         let cachedLeaderboard = [];
         const screens = { login: document.getElementById('login-screen'), register: document.getElementById('register-screen'), start: document.getElementById('start-screen'), levelSelect: document.getElementById('level-select-screen'), levelIntro: document.getElementById('level-intro-screen'), game: document.getElementById('game-screen'), levelComplete: document.getElementById('level-complete-screen'), end: document.getElementById('end-screen'), leaderboard: document.getElementById('leaderboard-screen') };
         const loadingOverlay = document.getElementById('loading-overlay');
-        
+
         // --- 0. SOUND SYSTEM ---
         let soundEnabled = true;
         function toggleSound() {
             soundEnabled = !soundEnabled;
             document.getElementById('sound-toggle-btn').innerHTML = soundEnabled ? '<i data-lucide="volume-2" class="w-4 h-4"></i> เสียง: เปิด' : '<i data-lucide="volume-x" class="w-4 h-4 text-slate-400"></i> เสียง: ปิด';
             lucide.createIcons();
-            if(soundEnabled) SoundManager.init();
+            if (soundEnabled) SoundManager.init();
             MusicManager.updateVolume();
         }
 
@@ -322,36 +780,36 @@
             menuBGM: new Audio('https://assets.mixkit.co/music/preview/mixkit-getting-ready-46.mp3'),
             gameBGM: new Audio('https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3'),
             current: null,
-            init: function() { this.menuBGM.loop = true; this.menuBGM.volume = 0.3; this.gameBGM.loop = true; this.gameBGM.volume = 0.25; },
-            play: function(track) {
+            init: function () { this.menuBGM.loop = true; this.menuBGM.volume = 0.3; this.gameBGM.loop = true; this.gameBGM.volume = 0.25; },
+            play: function (track) {
                 let target = track === 'menu' ? this.menuBGM : (track === 'game' ? this.gameBGM : null);
                 if (this.current === target) {
-                    if (soundEnabled && target && target.paused) target.play().catch(e=>console.log(e));
+                    if (soundEnabled && target && target.paused) target.play().catch(e => console.log(e));
                     return;
                 }
                 this.stop();
                 this.current = target;
                 if (soundEnabled && this.current) { this.current.currentTime = 0; this.current.play().catch(e => console.log(e)); }
             },
-            stop: function() { if (this.current) { this.current.pause(); } },
-            updateVolume: function() {
-                if(!soundEnabled) this.stop();
-                else if (this.current && this.current.paused) this.current.play().catch(e=>console.log(e));
+            stop: function () { if (this.current) { this.current.pause(); } },
+            updateVolume: function () {
+                if (!soundEnabled) this.stop();
+                else if (this.current && this.current.paused) this.current.play().catch(e => console.log(e));
             }
         };
         MusicManager.init();
 
         const SoundManager = {
             ctx: null,
-            init: function() {
-                if(!soundEnabled) return;
+            init: function () {
+                if (!soundEnabled) return;
                 if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (this.ctx.state === 'suspended') this.ctx.resume();
             },
-            playOsc: function(freq, typeStr, duration, slideFreq) {
+            playOsc: function (freq, typeStr, duration, slideFreq) {
                 if (!soundEnabled) return;
                 this.init();
-                if(!this.ctx) return;
+                if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.connect(gain); gain.connect(this.ctx.destination);
@@ -362,89 +820,98 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
                 osc.start(); osc.stop(this.ctx.currentTime + duration);
             },
-            playCorrect: function() { this.playOsc(500, 'sine', 0.1, 1000); setTimeout(() => this.playOsc(1000, 'sine', 0.15, 1500), 80); },
-            playWrong: function() { this.playOsc(300, 'sawtooth', 0.3, 100); },
-            playCombo: function() { this.playOsc(400, 'square', 0.1, 600); setTimeout(() => this.playOsc(600, 'square', 0.1, 800), 100); setTimeout(() => this.playOsc(800, 'sine', 0.3, 1200), 200); },
-            playTick: function() { this.playOsc(800, 'triangle', 0.05, 600); },
-            playWin: function() { [0, 100, 200, 300].forEach((t, i) => { setTimeout(() => this.playOsc(400 + (i*100), 'sine', 0.15, 500 + (i*100)), t); }); setTimeout(() => this.playOsc(800, 'sine', 0.4, 1200), 400); }
+            playCorrect: function () { this.playOsc(500, 'sine', 0.1, 1000); setTimeout(() => this.playOsc(1000, 'sine', 0.15, 1500), 80); },
+            playWrong: function () { this.playOsc(300, 'sawtooth', 0.3, 100); },
+            playCombo: function () { this.playOsc(400, 'square', 0.1, 600); setTimeout(() => this.playOsc(600, 'square', 0.1, 800), 100); setTimeout(() => this.playOsc(800, 'sine', 0.3, 1200), 200); },
+            playTick: function () { this.playOsc(800, 'triangle', 0.05, 600); },
+            playWin: function () { [0, 100, 200, 300].forEach((t, i) => { setTimeout(() => this.playOsc(400 + (i * 100), 'sine', 0.15, 500 + (i * 100)), t); }); setTimeout(() => this.playOsc(800, 'sine', 0.4, 1200), 400); }
         };
-        
-        // --- 1. FIREBASE BACKEND ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBh0QE8TFOlvA7WkV2s4zeyC6EVFi-zg2s",
-            authDomain: "schoolsafetyhero.firebaseapp.com",
-            databaseURL: "https://schoolsafetyhero-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "schoolsafetyhero",
-            storageBucket: "schoolsafetyhero.firebasestorage.app",
-            messagingSenderId: "116626617404",
-            appId: "1:116626617404:web:2625e559b60aa7c6b43f39"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+
+        // --- 1. SUPABASE BACKEND ---
+        // TODO: ใส่ URL และ anon key ของ Supabase ของคุณที่นี่
+        const SUPABASE_URL = "https://vdceebtdfiysopihxcgr.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkY2VlYnRkZml5c29waWh4Y2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzY2NjUsImV4cCI6MjA5NDg1MjY2NX0.PBRhvA19RFp5aG0ThJUjigaw_DZ-5H3jFLVnuUE9efg";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const GameStorage = {
-            loginUser: async function(phone) {
+            loginUser: async function (phone) {
                 try {
-                    const sn = await database.ref('users/' + phone).once('value');
-                    const data = sn.val();
+                    const { data, error } = await supabaseClient.from('users').select('*').eq('phone', phone).maybeSingle();
+                    if (error) throw error;
                     if (data) return { found: true, ...data };
                     return { found: false };
-                } catch(e) { console.error(e); return { found: false }; }
+                } catch (e) { console.error(e); return { found: false }; }
             },
-            registerUser: async function(name, phone) {
+            registerUser: async function (name, phone) {
                 try {
-                    const sn = await database.ref('users/' + phone).once('value');
-                    if (sn.exists()) return { success: false, message: "เบอร์โทรนี้มีผู้ใช้แล้ว" };
-                    const newUser = { name, phone, maxUnlocked: 0, totalHighScore: 0, levelScores: {0:0,1:0,2:0,3:0,4:0} };
-                    await database.ref('users/' + phone).set(newUser);
+                    const { data: existing, error: checkErr } = await supabaseClient.from('users').select('phone').eq('phone', phone).maybeSingle();
+                    if (checkErr) throw checkErr;
+                    if (existing) return { success: false, message: "เบอร์โทรนี้มีผู้ใช้แล้ว" };
+
+                    const newUser = { name, phone, maxUnlocked: 0, totalHighScore: 0, levelScores: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 } };
+                    const { data, error } = await supabaseClient.from('users').insert([newUser]).select().single();
+                    if (error) throw error;
                     return { success: true, user: newUser };
-                } catch(e) { console.error(e); return { success: false, message: "เชื่อมต่อฐานข้อมูลล้มเหลว" }; }
+                } catch (e) { console.error(e); return { success: false, message: "เชื่อมต่อฐานข้อมูลล้มเหลว" }; }
             },
-            saveLevelScore: async function(phone, levelIndex, score) {
+            saveLevelScore: async function (phone, levelIndex, score) {
                 try {
-                    const userRef = database.ref('users/' + phone);
-                    const sn = await userRef.once('value');
-                    if(!sn.exists()) return { success: false };
-                    const user = sn.val();
-                    if(!user.levelScores) user.levelScores = {0:0,1:0,2:0,3:0,4:0};
+                    const { data: user, error: fetchErr } = await supabaseClient.from('users').select('*').eq('phone', phone).single();
+                    if (fetchErr || !user) return { success: false };
+
+                    if (!user.levelScores) user.levelScores = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
                     user.maxUnlocked = user.maxUnlocked || 0;
                     if (levelIndex >= user.maxUnlocked) { user.maxUnlocked = levelIndex + 1; }
+
                     const current = user.levelScores[levelIndex] || 0;
                     let isNewRecord = false;
-                    if(score > current) {
+
+                    if (score > current) {
                         user.levelScores[levelIndex] = score;
                         let total = 0;
-                        for(let i=0; i<5; i++) total += (user.levelScores[i]||0);
+                        for (let i = 0; i < 5; i++) total += (user.levelScores[i] || 0);
                         user.totalHighScore = total;
                         isNewRecord = true;
                     }
-                    await userRef.set(user);
+
+                    const { error: updateErr } = await supabaseClient.from('users').update({
+                        maxUnlocked: user.maxUnlocked,
+                        totalHighScore: user.totalHighScore,
+                        levelScores: user.levelScores
+                    }).eq('phone', phone);
+
+                    if (updateErr) throw updateErr;
+
                     return { success: true, newTotal: user.totalHighScore, isNewRecord: isNewRecord, updatedUser: user };
-                } catch(e) { console.error(e); return { success: false }; }
+                } catch (e) { console.error(e); return { success: false }; }
             },
-            getLeaderboardData: async function() {
+            getLeaderboardData: async function () {
                 try {
-                    const sn = await database.ref('users').once('value');
-                    const val = sn.val();
-                    if(!val) return [];
-                    return Object.values(val);
-                } catch(e) { console.error(e); return []; }
+                    const { data, error } = await supabaseClient.from('users').select('*').order('totalHighScore', { ascending: false });
+                    if (error) throw error;
+                    return data || [];
+                } catch (e) { console.error(e); return []; }
             }
         };
 
         // Realtime Listener
-        database.ref('users').on('value', (snapshot) => {
-            const val = snapshot.val();
-            cachedLeaderboard = val ? Object.values(val) : [];
-            // Auto update leaderboard if visible
-            if (screens.leaderboard && !screens.leaderboard.classList.contains('hidden')) {
-                const activeBtn = document.querySelector('.lb-tab.bg-blue-600');
-                if(activeBtn) {
-                    const filter = activeBtn.id.replace('tab-', '');
-                    filterLeaderboard(filter);
+        async function fetchInitialLeaderboard() {
+            cachedLeaderboard = await GameStorage.getLeaderboardData();
+        }
+        fetchInitialLeaderboard();
+
+        supabaseClient.channel('public:users')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
+                cachedLeaderboard = await GameStorage.getLeaderboardData();
+                if (screens.leaderboard && !screens.leaderboard.classList.contains('hidden')) {
+                    const activeBtn = document.querySelector('.lb-tab.bg-blue-600');
+                    if (activeBtn) {
+                        const filter = activeBtn.id.replace('tab-', '');
+                        filterLeaderboard(filter);
+                    }
                 }
-            }
-        });
+            })
+            .subscribe();
 
         // --- 2. HELPERS ---
         function setLoading(isLoading) {
@@ -455,16 +922,16 @@
         async function handleLogin() {
             const phone = document.getElementById('login-phone').value.trim();
             if (!phone) return alert("กรุณากรอกเบอร์โทรศัพท์");
-            
+
             setLoading(true);
             const res = await GameStorage.loginUser(phone);
             setLoading(false);
 
-            if (res.found) { 
-                currentUser = res; 
-                showStartScreen(); 
-            } else { 
-                alert("ไม่พบเบอร์โทรศัพท์ กรุณาสมัครสมาชิก"); 
+            if (res.found) {
+                currentUser = res;
+                showStartScreen();
+            } else {
+                alert("ไม่พบเบอร์โทรศัพท์ กรุณาสมัครสมาชิก");
             }
         }
 
@@ -472,17 +939,17 @@
             const name = document.getElementById('reg-name').value.trim();
             const phone = document.getElementById('reg-phone').value.trim();
             if (!name || !phone) return alert("กรุณากรอกข้อมูลให้ครบ");
-            
+
             setLoading(true);
             const res = await GameStorage.registerUser(name, phone);
             setLoading(false);
 
-            if (res.success) { 
-                currentUser = res.user; 
-                alert("สมัครสำเร็จ!"); 
-                showStartScreen(); 
-            } else { 
-                alert(res.message); 
+            if (res.success) {
+                currentUser = res.user;
+                alert("สมัครสำเร็จ!");
+                showStartScreen();
+            } else {
+                alert(res.message);
             }
         }
 
@@ -497,14 +964,14 @@
             screens.leaderboard.classList.remove('hidden');
             screens.leaderboard.classList.add('fade-in');
             MusicManager.play('menu');
-            
-            if(cachedLeaderboard.length === 0) {
+
+            if (cachedLeaderboard.length === 0) {
                 setLoading(true);
                 cachedLeaderboard = await GameStorage.getLeaderboardData();
                 setLoading(false);
             }
             filterLeaderboard('all');
-            
+
             lucide.createIcons();
         }
 
@@ -537,11 +1004,12 @@
 
         // --- GAME LOGIC ---
         const gameData = [
-             { id: 1, title: "ด่านที่ 1: ความปลอดภัยทั่วไป", desc: "จับคู่สถานการณ์ความเสี่ยงกับคำศัพท์หรือการระวังภัยที่ถูกต้อง", icon: "alert-triangle", questions: [ { q: "เห็นพื้นเปียกน้ำนอง", a: "ระวังลื่น", icon: "droplets", options: ["ระวังลื่น", "ระวังของร้อน", "ระวังไฟดูด", "ระวังสะดุด"] }, { q: "วิ่งลงบันได", a: "พลัดตกหกล้ม", icon: "trending-down", options: ["พลัดตกหกล้ม", "ถูกของมีคม", "ไฟไหม้", "อาหารเป็นพิษ"] }, { q: "ปลั๊กไฟชำรุด", a: "ไฟดูด/ไฟฟ้าลัดวงจร", icon: "zap", options: ["ไฟดูด/ไฟฟ้าลัดวงจร", "น้ำท่วม", "เสียงดังเกินไป", "ขาดอากาศ"] }, { q: "ยกของหนักผิดท่า", a: "ปวดหลัง/บาดเจ็บ", icon: "package", options: ["ปวดหลัง/บาดเจ็บ", "ตาอักเสบ", "หูอื้อ", "ผิวหนังไหม้"] }, { q: "เศษแก้วแตกบนพื้น", a: "ของมีคมบาด", icon: "scissors", options: ["ของมีคมบาด", "ศีรษะกระแทก", "สารเคมีหก", "สำลักควัน"] }, { q: "เล่นโทรศัพท์ขณะเดิน", a: "ชนสิ่งกีดขวาง", icon: "smartphone", options: ["ชนสิ่งกีดขวาง", "นิ้วล็อค", "สายตาสั้น", "แบตเตอรี่หมด"] }, { q: "สารเคมีในห้องวิทย์หก", a: "อันตรายจากสารเคมี", icon: "flask-conical", options: ["อันตรายจากสารเคมี", "ไฟดูด", "ดินสไลด์", "น้ำร้อนลวก"] }, { q: "เสียงเครื่องจักรดังมาก", a: "อันตรายต่อการได้ยิน", icon: "volume-2", options: ["อันตรายต่อการได้ยิน", "แสบตา", "ปวดหัว", "คลื่นไส้"] }, { q: "ห้องเรียนมืดเกินไป", a: "แสงสว่างไม่เพียงพอ", icon: "eye-off", options: ["แสงสว่างไม่เพียงพอ", "อากาศถ่ายเทไม่ดี", "เสียงรบกวน", "ความร้อนสูง"] }, { q: "ฝุ่นละออง PM 2.5", a: "ระบบทางเดินหายใจ", icon: "wind", options: ["ระบบทางเดินหายใจ", "ระบบย่อยอาหาร", "ระบบประสาท", "กระดูกหัก"] } ] },
-             { id: 2, title: "ด่านที่ 2: ป้ายความปลอดภัย", desc: "เลือกความหมายของป้ายสัญลักษณ์ความปลอดภัยให้ถูกต้อง", icon: "signpost", questions: [ { q: "วงกลมสีแดง มีขีดคาด", a: "ป้ายห้าม", icon: "ban", options: ["ป้ายห้าม", "ป้ายเตือน", "ป้ายบังคับ", "ป้ายสารนิเทศ"] }, { q: "สามเหลี่ยมสีเหลือง", a: "ป้ายเตือน", icon: "alert-triangle", options: ["ป้ายเตือน", "ป้ายห้าม", "ป้ายปลอดภัย", "ป้ายบังคับ"] }, { q: "วงกลมสีฟ้า", a: "ป้ายบังคับ", icon: "info", options: ["ป้ายบังคับ", "ป้ายหยุด", "ป้ายระวัง", "ป้ายหนีไฟ"] }, { q: "สี่เหลี่ยมสีเขียว", a: "ป้ายความปลอดภัย", icon: "check-square", options: ["ป้ายความปลอดภัย", "ป้ายสารเคมี", "ป้ายห้ามเข้า", "ป้ายระวังไฟ"] }, { q: "สัญลักษณ์กากบาทไขว้", a: "ปฐมพยาบาล", icon: "plus-circle", options: ["ปฐมพยาบาล", "จุดรวมพล", "ห้ามผ่าน", "ระวังรังสี"] }, { q: "สัญลักษณ์หัวกะโหลกไขว้", a: "สารพิษอันตราย", icon: "skull", options: ["สารพิษอันตราย", "ระวังคนตาย", "ห้ามส่งเสียง", "พื้นที่ก่อสร้าง"] }, { q: "รูปเปลวไฟ", a: "ระวังไวไฟ", icon: "flame", options: ["ระวังไวไฟ", "ระวังระเบิด", "ห้ามจุดไฟ", "ทางหนีไฟ"] }, { q: "รูปคนวิ่งหนีออกจากประตู", a: "ทางหนีไฟ", icon: "door-open", options: ["ทางหนีไฟ", "ห้ามวิ่ง", "ทางเข้า", "ห้องน้ำ"] }, { q: "รูปบุหรี่ในวงกลมขีดคาด", a: "เขตปลอดบุหรี่", icon: "cigarette-off", options: ["เขตปลอดบุหรี่", "สูบบุหรี่ได้", "ขายบุหรี่", "ระวังไฟไหม้"] }, { q: "รูปสายฟ้า", a: "ระวังไฟฟ้าแรงสูง", icon: "zap", options: ["ระวังไฟฟ้าแรงสูง", "ระวังพายุ", "ห้ามใช้ไฟ", "ระวังเลเซอร์"] } ] },
-             { id: 3, title: "ด่านที่ 3: อุปกรณ์ PPE", desc: "เลือกอุปกรณ์ป้องกันภัยส่วนบุคคล (PPE) ให้ตรงกับอวัยวะหรือสถานการณ์", icon: "hard-hat", questions: [ { q: "ป้องกันศีรษะกระแทก", a: "หมวกนิรภัย", icon: "hard-hat", options: ["หมวกนิรภัย", "หมวกแก๊ป", "หน้ากากเชื่อม", "ที่ครอบหู"] }, { q: "ป้องกันดวงตาจากสะเก็ด", a: "แว่นตานิรภัย", icon: "glasses", options: ["แว่นตานิรภัย", "หน้ากากอนามัย", "คอนแทคเลนส์", "กระจกเงา"] }, { q: "ป้องกันเสียงดัง", a: "ที่ครอบหู/Earplugs", icon: "headphones", options: ["ที่ครอบหู/Earplugs", "หมวกไหมพรม", "หูฟังเพลง", "หน้ากากผ้า"] }, { q: "ป้องกันการสูดดมฝุ่น/สารเคมี", a: "หน้ากากกรองอากาศ", icon: "meh", options: ["หน้ากากกรองอากาศ", "แว่นกันแดด", "ถุงมือยาง", "ผ้าพันคอ"] }, { q: "ป้องกันมือจากสารเคมี", a: "ถุงมือยาง", icon: "hand", options: ["ถุงมือยาง", "ถุงมือผ้า", "ถุงมือหนัง", "ถุงพลาสติก"] }, { q: "ป้องกันเท้าเจาะทะลุ", a: "รองเท้านิรภัยหัวเหล็ก", icon: "footprints", options: ["รองเท้านิรภัยหัวเหล็ก", "รองเท้าแตะ", "รองเท้าผ้าใบ", "ถุงเท้าหนา"] }, { q: "ทำงานบนที่สูง", a: "เข็มขัดนิรภัย", icon: "anchor", options: ["เข็มขัดนิรภัย", "เชือกฟาง", "บันไดลิง", "ร่มชูชีพ"] }, { q: "ป้องกันใบหน้าจากงานเชื่อม", a: "กระบังหน้า", icon: "shield", options: ["กระบังหน้า", "หมวกกันน็อค", "แว่นสายตา", "ผ้าปิดตา"] }, { q: "ป้องกันร่างกายเปื้อนสารเคมี", a: "ชุดเอี๊ยม/ชุดหมี", icon: "shirt", options: ["ชุดเอี๊ยม/ชุดหมี", "เสื้อกันฝน", "เสื้อยืด", "ผ้ากันเปื้อนทำอาหาร"] }, { q: "สัญลักษณ์ PPE สีอะไร", a: "สีน้ำเงิน", icon: "palette", options: ["สีน้ำเงิน", "สีแดง", "สีเหลือง", "สีเขียว"] } ] },
-             { id: 4, title: "ด่านที่ 4: อัคคีภัยและภัยพิบัติ", desc: "เลือกวิธีการเอาตัวรอดและการป้องกันอัคคีภัย/ธรณีพิบัติที่ถูกต้อง", icon: "flame", questions: [ { q: "องค์ประกอบของไฟ (สามเหลี่ยมไฟ)", a: "เชื้อเพลิง ความร้อน ออกซิเจน", icon: "triangle", options: ["เชื้อเพลิง ความร้อน ออกซิเจน", "น้ำ ลม ไฟ", "ไม้ กระดาษ น้ำมัน", "ความร้อน แสง เสียง"] }, { q: "ขั้นตอนการใช้ถังดับเพลิง (PASS)", a: "ดึง ปลด กด ส่าย", icon: "fire-extinguisher", options: ["ดึง ปลด กด ส่าย", "ยก เขย่า เท ขว้าง", "เปิด เท เล็ง ฉีด", "หมุน กด ดัน ดึง"] }, { q: "เมื่อเกิดแผ่นดินไหว", a: "หมอบ ป้อง เกาะ", icon: "activity", options: ["หมอบ ป้อง เกาะ", "วิ่งหนีทันที", "กระโดดลงหน้าต่าง", "ยืนนิ่งๆ"] }, { q: "การหนีไฟที่มีควันมาก", a: "คลานต่ำ", icon: "chevrons-down", options: ["คลานต่ำ", "วิ่งให้เร็วที่สุด", "เดินก้มหน้า", "กลั้นหายใจเดิน"] }, { q: "จุดที่คนไปรวมตัวเมื่อเกิดเหตุ", a: "จุดรวมพล", icon: "users", options: ["จุดรวมพล", "โรงอาหาร", "ห้องน้ำ", "ดาดฟ้า"] }, { q: "เบอร์โทรแจ้งเหตุเพลิงไหม้", a: "199", icon: "phone", options: ["199", "191", "1669", "1112"] }, { q: "ถังดับเพลิงสีแดง (ผงเคมีแห้ง)", a: "ดับไฟได้เกือบทุกประเภท", icon: "box", options: ["ดับไฟได้เกือบทุกประเภท", "ดับเฉพาะไฟฟ้า", "ดับเฉพาะน้ำมัน", "ห้ามใช้ในอาคาร"] }, { q: "ก่อนออกจากห้องที่ไฟไหม้ควรทำอะไร", a: "ใช้หลังมือสัมผัสลูกบิดประตู", icon: "hand-metal", options: ["ใช้หลังมือสัมผัสลูกบิดประตู", "รีบเปิดประตูทันที", "ตะโกนถามคนข้างนอก", "ล็อคประตู"] }, { q: "ลิฟต์ขณะเกิดไฟไหม้", a: "ห้ามใช้เด็ดขาด", icon: "arrow-up-down", options: ["ห้ามใช้เด็ดขาด", "ใช้ได้ถ้ารีบ", "ใช้ขนของเท่านั้น", "ใช้ลงชั้นล่างสุด"] }, { q: "สัญญาณเตือนภัยสึนามิ", a: "น้ำทะเลลดระดับรวดเร็ว", icon: "waves", options: ["น้ำทะเลลดระดับรวดเร็ว", "ฝนตกหนัก", "ลมสงบ", "แดดออกจัด"] } ] },
-             { id: 5, title: "ด่านที่ 5: ปฐมพยาบาล", desc: "เลือกวิธีการปฐมพยาบาลและการช่วยชีวิตเบื้องต้นให้ถูกต้อง", icon: "heart", questions: [ { q: "เบอร์โทรฉุกเฉินการแพทย์", a: "1669", icon: "phone-call", options: ["1669", "191", "199", "1554"] }, { q: "เจอคนหมดสติ ต้องทำสิ่งแรก", a: "ปลุกเรียก/ดูการหายใจ", icon: "eye", options: ["ปลุกเรียก/ดูการหายใจ", "ปั๊มหัวใจทันที", "กรอกน้ำใส่ปาก", "อุ้มเขย่า"] }, { q: "การกดหน้าอก CPR อัตราความเร็ว", a: "100-120 ครั้ง/นาที", icon: "activity", options: ["100-120 ครั้ง/นาที", "50-60 ครั้ง/นาที", "150 ครั้ง/นาที", "ช้าๆ เน้นๆ"] }, { q: "เครื่องกระตุกหัวใจไฟฟ้าอัตโนมัติ", a: "AED", icon: "zap", options: ["AED", "LED", "GPS", "ECG"] }, { q: "เลือดกำเดาไหล", a: "ก้มหน้า บีบจมูก", icon: "frown", options: ["ก้มหน้า บีบจมูก", "เงยหน้าขึ้น", "นอนราบ", "สั่งน้ำมูกแรงๆ"] }, { q: "มีแผลเลือดไหลไม่หยุด", a: "กดห้ามเลือดโดยตรง", icon: "hand", options: ["กดห้ามเลือดโดยตรง", "ล้างน้ำอุ่น", "ทายาหม่อง", "ปล่อยให้หยุดเอง"] }, { q: "อาหารติดคอ (Choking)", a: "รัดกระตุกหน้าท้อง (Heimlich)", icon: "user-x", options: ["รัดกระตุกหน้าท้อง (Heimlich)", "ตบหลังเบาๆ", "ให้ดื่มน้ำ", "ล้วงคอ"] }, { q: "แผลไฟไหม้ น้ำร้อนลวก", a: "ล้างด้วยน้ำสะอาดอุณหภูมิปกติ", icon: "droplet", options: ["ล้างด้วยน้ำสะอาดอุณหภูมิปกติ", "ทายาสีฟัน", "ประคบน้ำแข็งจัด", "เจาะตุ่มพอง"] }, { q: "คนเป็นลม", a: "นอนราบ ยกขาสูง", icon: "layout", options: ["นอนราบ ยกขาสูง", "ให้นั่งก้มหน้า", "ประคองเดิน", "สาดน้ำใส่หน้า"] }, { q: "งูกัด", a: "ล้างแผล อยู่นิ่งๆ ส่งรพ.", icon: "alert-octagon", options: ["ล้างแผล อยู่นิ่งๆ ส่งรพ.", "ขันชะเนาะแน่นๆ", "ดูดพิษออก", "กรีดปากแผล"] } ] }
+            { id: 1, title: "ด่านที่ 1: ความปลอดภัยทั่วไป", desc: "จับคู่สถานการณ์ความเสี่ยงกับคำศัพท์หรือการระวังภัยที่ถูกต้อง", icon: "alert-triangle", questions: [{ q: "เห็นพื้นเปียกน้ำนอง", a: "ระวังลื่น", icon: "droplets", options: ["ระวังลื่น", "ระวังของร้อน", "ระวังไฟดูด", "ระวังสะดุด"] }, { q: "วิ่งลงบันได", a: "พลัดตกหกล้ม", icon: "trending-down", options: ["พลัดตกหกล้ม", "ถูกของมีคม", "ไฟไหม้", "อาหารเป็นพิษ"] }, { q: "ปลั๊กไฟชำรุด", a: "ไฟดูด/ไฟฟ้าลัดวงจร", icon: "zap", options: ["ไฟดูด/ไฟฟ้าลัดวงจร", "น้ำท่วม", "เสียงดังเกินไป", "ขาดอากาศ"] }, { q: "ยกของหนักผิดท่า", a: "ปวดหลัง/บาดเจ็บ", icon: "package", options: ["ปวดหลัง/บาดเจ็บ", "ตาอักเสบ", "หูอื้อ", "ผิวหนังไหม้"] }, { q: "เศษแก้วแตกบนพื้น", a: "ของมีคมบาด", icon: "scissors", options: ["ของมีคมบาด", "ศีรษะกระแทก", "สารเคมีหก", "สำลักควัน"] }, { q: "เล่นโทรศัพท์ขณะเดิน", a: "ชนสิ่งกีดขวาง", icon: "smartphone", options: ["ชนสิ่งกีดขวาง", "นิ้วล็อค", "สายตาสั้น", "แบตเตอรี่หมด"] }, { q: "สารเคมีในห้องวิทย์หก", a: "อันตรายจากสารเคมี", icon: "flask-conical", options: ["อันตรายจากสารเคมี", "ไฟดูด", "ดินสไลด์", "น้ำร้อนลวก"] }, { q: "เสียงเครื่องจักรดังมาก", a: "อันตรายต่อการได้ยิน", icon: "volume-2", options: ["อันตรายต่อการได้ยิน", "แสบตา", "ปวดหัว", "คลื่นไส้"] }, { q: "ห้องเรียนมืดเกินไป", a: "แสงสว่างไม่เพียงพอ", icon: "eye-off", options: ["แสงสว่างไม่เพียงพอ", "อากาศถ่ายเทไม่ดี", "เสียงรบกวน", "ความร้อนสูง"] }, { q: "ฝุ่นละออง PM 2.5", a: "ระบบทางเดินหายใจ", icon: "wind", options: ["ระบบทางเดินหายใจ", "ระบบย่อยอาหาร", "ระบบประสาท", "กระดูกหัก"] }] },
+            { id: 2, title: "ด่านที่ 2: ป้ายความปลอดภัย", desc: "เลือกความหมายของป้ายสัญลักษณ์ความปลอดภัยให้ถูกต้อง", icon: "signpost", questions: [{ q: "วงกลมสีแดง มีขีดคาด", a: "ป้ายห้าม", icon: "ban", options: ["ป้ายห้าม", "ป้ายเตือน", "ป้ายบังคับ", "ป้ายสารนิเทศ"] }, { q: "สามเหลี่ยมสีเหลือง", a: "ป้ายเตือน", icon: "alert-triangle", options: ["ป้ายเตือน", "ป้ายห้าม", "ป้ายปลอดภัย", "ป้ายบังคับ"] }, { q: "วงกลมสีฟ้า", a: "ป้ายบังคับ", icon: "info", options: ["ป้ายบังคับ", "ป้ายหยุด", "ป้ายระวัง", "ป้ายหนีไฟ"] }, { q: "สี่เหลี่ยมสีเขียว", a: "ป้ายความปลอดภัย", icon: "check-square", options: ["ป้ายความปลอดภัย", "ป้ายสารเคมี", "ป้ายห้ามเข้า", "ป้ายระวังไฟ"] }, { q: "สัญลักษณ์กากบาทไขว้", a: "ปฐมพยาบาล", icon: "plus-circle", options: ["ปฐมพยาบาล", "จุดรวมพล", "ห้ามผ่าน", "ระวังรังสี"] }, { q: "สัญลักษณ์หัวกะโหลกไขว้", a: "สารพิษอันตราย", icon: "skull", options: ["สารพิษอันตราย", "ระวังคนตาย", "ห้ามส่งเสียง", "พื้นที่ก่อสร้าง"] }, { q: "รูปเปลวไฟ", a: "ระวังไวไฟ", icon: "flame", options: ["ระวังไวไฟ", "ระวังระเบิด", "ห้ามจุดไฟ", "ทางหนีไฟ"] }, { q: "รูปคนวิ่งหนีออกจากประตู", a: "ทางหนีไฟ", icon: "door-open", options: ["ทางหนีไฟ", "ห้ามวิ่ง", "ทางเข้า", "ห้องน้ำ"] }, { q: "รูปบุหรี่ในวงกลมขีดคาด", a: "เขตปลอดบุหรี่", icon: "cigarette-off", options: ["เขตปลอดบุหรี่", "สูบบุหรี่ได้", "ขายบุหรี่", "ระวังไฟไหม้"] }, { q: "รูปสายฟ้า", a: "ระวังไฟฟ้าแรงสูง", icon: "zap", options: ["ระวังไฟฟ้าแรงสูง", "ระวังพายุ", "ห้ามใช้ไฟ", "ระวังเลเซอร์"] }] },
+            { id: 3, title: "ด่านที่ 3: อุปกรณ์ PPE", desc: "หน่วยที่ 3: อุปกรณ์ป้องกันอันตรายส่วนบุคคล (สัปดาห์ที่ 3)", icon: "hard-hat", questions: [{ q: "PPE หมายถึงสิ่งใด?", a: "อุปกรณ์ป้องกันอันตรายส่วนบุคคล", icon: "shield", options: ["เครื่องจักรกลหนัก", "อุปกรณ์ป้องกันอันตรายส่วนบุคคล", "อุปกรณ์ดับเพลิง", "สัญลักษณ์ความปลอดภัย"] }, { q: "'ดวงตา' เสี่ยงบาดเจ็บจากการทำงานสูงถึงกี่เปอร์เซ็นต์?", a: "37%", icon: "eye", options: ["10%", "25%", "37%", "64%"] }, { q: "งาน 'เจียรโลหะ' ต้องใช้อุปกรณ์ใดป้องกันใบหน้า?", a: "แว่นตานิรภัยหรือแว่นครอบตา", icon: "glasses", options: ["ที่อุดหู", "เข็มขัดนิรภัยเต็มตัว", "แว่นตานิรภัยหรือแว่นครอบตา", "รองเท้านิรภัย"] }, { q: "หน้าที่หลักของ 'รองเท้านิรภัย' คืออะไร?", a: "กันของหนักตกใส่และกันลื่น", icon: "footprints", options: ["กันไฟฟ้ารั่วอย่างเดียว", "กันของหนักตกใส่และกันลื่น", "ช่วยให้เดินได้เร็วขึ้น", "กันเศษฝุ่นเข้าเท้า"] }, { q: "'เข็มขัดนิรภัยเต็มตัว' ใช้เมื่อทำงานลักษณะใด?", a: "งานบนที่สูงเกิน 2 เมตร", icon: "anchor", options: ["งานซ่อมบำรุงไฟฟ้าทั่วไป", "งานผสมสารเคมีในห้องแล็บ", "งานบนที่สูงเกิน 2 เมตร", "งานขนย้ายกล่องในคลัง"] }, { q: "ก่อนสวมหมวกนิรภัย ต้องตรวจสอบอะไร?", a: "รอยร้าวที่เปลือกหมวกและสายรองใน", icon: "hard-hat", options: ["เช็ดด้วยแอลกอฮอล์", "รอยร้าวที่เปลือกหมวกและสายรองใน", "ทดสอบกันไฟฟ้าด้วยสปาร์ค", "นำไปตากแดดเพื่อฆ่าเชื้อ"] }, { q: "เก็บชายเสื้อและรวบผม ป้องกันอุบัติเหตุแบบใด?", a: "ถูกเครื่องจักรหมุนหนีบดึงรั้ง", icon: "scissors", options: ["ถูกเครื่องจักรหมุนหนีบดึงรั้ง", "ถูกของมีคมบาด", "สารเคมีกระเด็นโดนผิวหนัง", "ถูกไฟฟ้าช็อต"] }, { q: "งานเสียงดังตลอดเวลา ใช้อุปกรณ์ใดป้องกันหู?", a: "ที่ครอบหูหรือที่อุดหู", icon: "headphones", options: ["หน้ากากกันฝุ่น", "แว่นตานิรภัย", "ที่ครอบหูหรือที่อุดหู", "หมวกนิรภัย"] }, { q: "ดูแลรักษา PPE อย่างถูกต้องทำอย่างไร?", a: "เก็บในที่แห้ง สะอาด ไม่ตากแดด", icon: "sun", options: ["เก็บในที่แห้ง สะอาด ไม่ตากแดด", "วางไว้ที่เครื่องจักรเพื่อสะดวก", "แช่น้ำยาทุกครั้งหลังใช้งาน", "อบความร้อนเพื่อฆ่าเชื้อ"] }, { q: "ปรับ 'สายรัดคาง' หมวกนิรภัยให้กระชับเพื่ออะไร?", a: "กันหมวกหลุดเมื่อก้มปฏิบัติงาน", icon: "lock", options: ["เพื่อความสวยงาม", "เพื่อระบายอากาศได้ดี", "กันหมวกหลุดเมื่อก้มปฏิบัติงาน", "เพื่อป้องกันไฟฟ้ารั่ว"] }] },
+            { id: 4, title: "ด่านที่ 4: ความปลอดภัยในงานเครื่องกล", desc: "หน่วยที่ 4: ความปลอดภัยในงานเครื่องกลและงานช่าง (สัปดาห์ที่ 4)", icon: "settings", questions: [{ q: "ข้อห้ามเด็ดขาดเมื่อใช้ 'เครื่องจักรหมุน' คืออะไร?", a: "ห้ามสวมถุงมือเด็ดขาด", icon: "hand-metal", options: ["ห้ามสวมแว่นตานิรภัย", "ห้ามสวมถุงมือเด็ดขาด", "ห้ามใส่รองเท้านิรภัย", "ห้ามปิดสวิตช์ขณะทำงาน"] }, { q: "ทำไมห้ามสวมถุงมือขณะคุมเครื่องจักรหมุน?", a: "ถุงมืออาจถูกแกนหมุนดึงรั้งเข้าเครื่อง", icon: "alert-triangle", options: ["จับชิ้นงานไม่ถนัด", "ถุงมืออาจถูกแกนหมุนดึงรั้งเข้าเครื่อง", "ถุงมืออาจเปื้อนน้ำมันหล่อลื่น", "จะทำให้เกิดไฟฟ้าสถิต"] }, { q: "จุดอันตรายของเครื่องจักรมักพบในรูปแบบใด?", a: "จุดหมุนและจุดหนีบ", icon: "refresh-cw", options: ["แสงจ้าทำลายดวงตา", "จุดหมุนและจุดหนีบ", "บริเวณปลั๊กไฟ", "บริเวณหน้าจอควบคุม"] }, { q: "อุบัติเหตุจาก 'เครื่องจักรหนีบและกระชาก' มีสถิติกี่เปอร์เซ็นต์?", a: "64%", icon: "bar-chart", options: ["25%", "37%", "64%", "90%"] }, { q: "ปุ่มหยุดฉุกเฉินบนเครื่องจักรมีไว้ทำอะไร?", a: "หยุดเครื่องทันทีเมื่อเกิดเหตุฉุกเฉิน", icon: "octagon", options: ["เปิดการทำงานอัตโนมัติ", "หยุดเครื่องทันทีเมื่อเกิดเหตุฉุกเฉิน", "เพิ่มความเร็วของรอบหมุน", "บันทึกข้อมูลการทำงาน"] }, { q: "ข้อใดคือ 'การกระทำที่ไม่ปลอดภัย' ในโรงฝึกงาน?", a: "ถอดการ์ดบังเครื่องจักรออกขณะทำงาน", icon: "shield-off", options: ["พื้นโรงงานมีน้ำมันหกเลอะเทอะ", "ถอดการ์ดบังเครื่องจักรออกขณะทำงาน", "สายไฟเครื่องจักรเปื่อยชำรุด", "แสงสว่างบริเวณเครื่องกลึงไม่พอ"] }, { q: "วิธีปัดเศษโลหะจากการกลึงที่ปลอดภัยที่สุด?", a: "ใช้แปรงปัด ห้ามใช้มือ", icon: "brush", options: ["ใช้มือเปล่าปัดออกทันที", "ใช้ลมเป่าให้กระเด็นออก", "ใช้แปรงปัด ห้ามใช้มือ", "ใช้ถุงมือหนากอบทิ้ง"] }, { q: "จุดอันตรายของ 'เครื่องเจาะ' นอกจากจุดหมุนคืออะไร?", a: "ดอกสว่านทิ่มแทงและเศษโลหะกระเด็น", icon: "zap", options: ["ความร้อนจากมอเตอร์", "ดอกสว่านทิ่มแทงและเศษโลหะกระเด็น", "แรงสั่นสะเทือนทำให้ปวดมือ", "กลิ่นควันจากการเจาะ"] }, { q: "กฎความปลอดภัยของ 'กุญแจขันหัวจับ' คืออะไร?", a: "ห้ามทิ้งคาไว้บนเครื่องเด็ดขาด", icon: "key", options: ["คาไว้บนเครื่องเพื่อความสะดวก", "ห้ามทิ้งคาไว้บนเครื่องเด็ดขาด", "ใช้ค้อนตอกให้แน่นที่สุด", "ไม่ต้องถอดออกหากเครื่องหยุด"] }, { q: "ก่อนใช้เครื่องจักรทุกครั้ง ช่างต้องทำอะไรก่อน?", a: "ตรวจสภาพเครื่องก่อนใช้ทุกครั้ง", icon: "check-square", options: ["เปิดเครื่องทดสอบความเร็วสูงสุด", "ตรวจสภาพเครื่องก่อนใช้ทุกครั้ง", "หยอดน้ำมันหล่อลื่นที่จุดหมุนทันที", "ทำความสะอาดพื้นรอบเครื่อง"] }] },
+            { id: 5, title: "ด่านที่ 5: ความปลอดภัยทางไฟฟ้า", desc: "หน่วยที่ 5: ความปลอดภัยทางไฟฟ้า (สัปดาห์ที่ 5)", icon: "zap", questions: [{ q: "กระแสไฟฟ้าไหลผ่านร่างกายลงดินจนเป็นอันตราย เรียกว่าอะไร?", a: "ไฟฟ้าดูด", icon: "zap", options: ["ไฟฟ้าลัดวงจร", "ประกายไฟอาร์ค", "ไฟฟ้าดูด", "อัคคีภัยจากไฟฟ้า"] }, { q: "พบเพื่อนถูกไฟฟ้าดูดหมดสติ กฎข้อแรกคืออะไร?", a: "ห้ามสัมผัสตัวด้วยมือเปล่า ให้ตัดไฟก่อน", icon: "power-off", options: ["รีบวิ่งเข้าไปดึงแขนเพื่อนออกมา", "ห้ามสัมผัสตัวด้วยมือเปล่า ให้ตัดไฟก่อน", "สาดน้ำใส่เพื่อนเพื่อให้ได้สติ", "ทำการปั๊มหัวใจทันทีเลย"] }, { q: "'ระบบสายดิน' มีหน้าที่อะไร?", a: "นำกระแสไฟรั่วลงดินแทนผ่านตัวคน", icon: "arrow-down-circle", options: ["เพิ่มความเสถียรของกระแสไฟฟ้า", "นำกระแสไฟรั่วลงดินแทนผ่านตัวคน", "ป้องกันปลั๊กไฟหลุดง่าย", "ลดค่าไฟฟ้าในแต่ละเดือน"] }, { q: "มาตรการ LOTO ตัว L และ T ย่อมาจากอะไร?", a: "ล็อคกุญแจ และแขวนป้ายเตือน", icon: "lock", options: ["สาย และ เวลา", "ล็อคกุญแจ และแขวนป้ายเตือน", "โหลด และ ทดสอบ", "แสง และ อุณหภูมิ"] }, { q: "ขั้นตอนแรกสุดของกระบวนการ LOTO คืออะไร?", a: "ปิดสวิตช์ตัดแหล่งจ่ายไฟ", icon: "toggle-left", options: ["แขวนป้ายเตือน", "คล้องกุญแจล็อค", "ทดสอบไฟด้วยเครื่องวัด", "ปิดสวิตช์ตัดแหล่งจ่ายไฟ"] }, { q: "เบอร์โทรฉุกเฉินเรียกหน่วยกู้ชีพในไทยคือหมายเลขอะไร?", a: "1669", icon: "phone-call", options: ["191", "199", "1669", "1192"] }, { q: "อุปกรณ์ตรวจจับไฟรั่ว (RCD) ทำงานอย่างไร?", a: "ตรวจพบกระแสรั่วแล้วตัดวงจรทันที", icon: "cpu", options: ["ปรับแรงดันไฟฟ้าให้คงที่", "ตรวจพบกระแสรั่วแล้วตัดวงจรทันที", "สำรองไฟเมื่อไฟดับ", "วัดค่าพลังงานไฟฟ้า"] }, { q: "เห็นสายไฟรั่วตกบนพื้นเปียก ท่าเอาตัวรอดคืออะไร?", a: "กระโดดเท้าคู่หรือยกเท้าข้างเดียว", icon: "activity", options: ["วิ่งหนีออกไปให้เร็วที่สุด", "ก้มตัวหมอบลงกับพื้น", "กระโดดเท้าคู่หรือยกเท้าข้างเดียว", "ใช้มือจับสายไฟโยนทิ้ง"] }, { q: "หมวกนิรภัย คลาส E มีคุณสมบัติพิเศษอย่างไร?", a: "ทนแรงดันไฟฟ้าสูงและไม่มีโลหะ", icon: "hard-hat", options: ["มีน้ำหนักเบากว่าหมวกทั่วไป", "ทนแรงดันไฟฟ้าสูงและไม่มีโลหะ", "สามารถกันกระสุนปืนได้", "มีไฟฉายติดในตัว"] }, { q: "ถุงมือยางฉนวนไฟฟ้า ตรวจสอบก่อนใช้อย่างไร?", a: "เป่าลมเข้าแล้วบีบหารอยรั่ว", icon: "check-circle", options: ["นำไปล้างน้ำให้สะอาด", "ดึงยืดให้สุดแรงดูความเหนียว", "เป่าลมเข้าแล้วบีบหารอยรั่ว", "นำไปตากแดดจนร้อน"] }] },
+            { id: 6, title: "ด่านที่ 6: เงื่อนเชือกกู้ภัย", desc: "หน่วยที่ 6: การทำงานของเงื่อน", icon: "link", questions: [{ q: "การทำงานของเงื่อนแบ่งเป็น 3 หมวดหมู่อะไร?", a: "ทำบ่วง, ต่อเชือก, ผูกกับวัตถุ", icon: "layers", options: ["ผูกแน่น, รูด, คลาย", "ทำบ่วง, ต่อเชือก, ผูกกับวัตถุ", "ยึดเกาะ, ดึง, ทดแรง", "กู้ภัย, ก่อสร้าง, เดินเรือ"] }, { q: "ต่อเชือก 2 เส้นขนาดเท่ากัน ยิ่งดึงยิ่งแน่น ใช้เงื่อนใด?", a: "เงื่อนประมง", icon: "anchor", options: ["เงื่อนพิรอด", "เงื่อนประมง", "เงื่อนขัดสมาธิ", "เงื่อนตะกรุดเบ็ด"] }, { q: "ข้อควรระวังร้ายแรงของ 'เงื่อนพิรอด' คืออะไร?", a: "ผูกสลับด้านกลายเป็นเงื่อนยายแก่ จะรูดหลุด", icon: "alert-octagon", options: ["นำไปผูกกับเสากลม", "ใช้ต่อเชือกขนาดต่างกัน", "ผูกสลับด้านกลายเป็นเงื่อนยายแก่ จะรูดหลุด", "มัดแน่นเกินไปจนแก้ไม่ออก"] }, { q: "ต่อเชือก 2 เส้น 'ขนาดต่างกัน' ใช้เงื่อนชนิดใด?", a: "เงื่อนขัดสมาธิ", icon: "git-merge", options: ["เงื่อนพิรอด", "เงื่อนประมง", "เงื่อนขัดสมาธิ", "บ่วงสายธนู"] }, { q: "'เงื่อนตะกรุดเบ็ด' ได้ฉายาว่าราชาการผูก เพราะอะไร?", a: "ผูกหลักหรือนั่งร้าน แน่นแต่แก้ง่าย", icon: "lock", options: ["เป็นบ่วงไม่รูดรัดตัว ใช้กู้ภัย", "ผูกหลักหรือนั่งร้าน แน่นแต่แก้ง่าย", "เลื่อนตึงหย่อนได้ เหมาะกับเต็นท์", "ใช้ต่อเส้นเอ็นที่ลื่นได้ดี"] }, { q: "เงื่อนใดสร้างห่วงคงรูป ไม่รูดรัดตัว เหมาะช่วยคนตกหลุม?", a: "บ่วงสายธนู", icon: "life-buoy", options: ["เงื่อนขัดสมาธิ", "เงื่อนตะกรุดเบ็ด", "บ่วงสายธนู", "เงื่อนผูกรั้ง"] }, { q: "ผูกสายเต็นท์ให้ปรับตึงหย่อนได้ ใช้เงื่อนอะไร?", a: "เงื่อนผูกรั้ง", icon: "sliders", options: ["เงื่อนผูกรั้ง", "เงื่อนผูกซุง", "เงื่อนกระหวัดไม้", "เงื่อนปมตาไก่"] }, { q: "ประโยชน์หลักของ 'เงื่อนผูกซุง' คืออะไร?", a: "ผูกลากท่อนไม้หรือวัตถุทรงกลม", icon: "move", options: ["ต่อเชือก 2 เส้นที่เปียกน้ำ", "ผูกลากท่อนไม้หรือวัตถุทรงกลม", "ขมวดปลายเชือกกันลุ่ย", "ทำเปลหามผู้ป่วย"] }, { q: "'เงื่อนปมตาไก่' ผูกเพื่อจุดประสงค์ใด?", a: "ขมวดหัวเชือกกันลุ่ยหรือร้อยรอก", icon: "circle", options: ["ขมวดหัวเชือกกันลุ่ยหรือร้อยรอก", "ต่อเชือกเพื่อความสวยงาม", "คล้องคันธนู", "ผูกไม้กระดานนั่งร้าน"] }, { q: "กฎเหล็กของ 'โหมดคำสั่งเสียง' ในกิจกรรมตรวจเงื่อนคู่บัดดี้คืออะไร?", a: "ผู้สั่งห้ามจับมือช่วยผูกเด็ดขาด", icon: "user-x", options: ["ห้ามใช้รหัสลับในการสั่งการ", "ห้ามจำกัดเวลาในการผูก", "ผู้สั่งห้ามจับมือช่วยผูกเด็ดขาด", "ห้ามให้เพื่อนหลับตาขณะผูก"] }] }
         ];
 
         let currentLevelIndex = 0, currentQuestionIndex = 0, score = 0, sessionTotalScore = 0;
@@ -554,14 +1022,14 @@
             MusicManager.play('menu');
             const list = document.getElementById('level-list');
             list.innerHTML = '';
-            
+
             const max = currentUser.maxUnlocked || 0;
-            
+
             gameData.forEach((ld, idx) => {
                 const isUnlocked = idx <= max;
                 const score = currentUser.levelScores[idx] || 0;
                 const scoreStr = score > 0 ? `<div class="ml-auto text-yellow-400 font-bold text-xs flex items-center gap-1 min-w-[max-content]"><i data-lucide="star" class="w-3 h-3 fill-yellow-400"></i> ${score}</div>` : '';
-                
+
                 if (isUnlocked) {
                     list.innerHTML += `<button onclick="selectLevel(${idx})" class="w-full text-left p-3 rounded-xl flex items-center gap-3 transition transform hover:scale-[1.02] bg-slate-800/80 border border-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] group overflow-hidden">
                         <div class="bg-blue-900/50 p-2.5 rounded-full group-hover:bg-blue-600/50 transition flex-shrink-0"><i data-lucide="${ld.icon}" class="w-5 h-5 text-blue-400 group-hover:text-white"></i></div>
@@ -616,15 +1084,15 @@
             if (pct > 50) bar.style.background = 'linear-gradient(90deg,#10b981,#3b82f6)';
             else if (pct > 25) bar.style.background = 'linear-gradient(90deg,#f59e0b,#f97316)';
             else bar.style.background = 'linear-gradient(90deg,#ef4444,#dc2626)';
-            
+
             const tInt = Math.ceil(timeLeft);
-            if (pct <= 25) { 
-                txt.classList.add('timer-urgent'); 
+            if (pct <= 25) {
+                txt.classList.add('timer-urgent');
                 if (tInt < lastTickInt && timeLeft > 0) {
                     SoundManager.playTick();
                 }
-            } else { 
-                txt.classList.remove('timer-urgent'); 
+            } else {
+                txt.classList.remove('timer-urgent');
             }
             lastTickInt = tInt;
         }
@@ -692,13 +1160,13 @@
             const rect = btn.getBoundingClientRect();
             const el = document.createElement('div');
             el.className = 'score-pop'; el.textContent = text;
-            el.style.cssText = `left:${rect.left + rect.width/2}px;top:${rect.top}px;color:${color};transform:translateX(-50%);`;
+            el.style.cssText = `left:${rect.left + rect.width / 2}px;top:${rect.top}px;color:${color};transform:translateX(-50%);`;
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 1200);
         }
 
         function showComboBadge(n) {
-            const messages = {2:'🔥 COMBO x2!', 3:'💥 COMBO x3!', 4:'⚡ COMBO x4!', 5:'🌟 COMBO x5!'};
+            const messages = { 2: '🔥 COMBO x2!', 3: '💥 COMBO x3!', 4: '⚡ COMBO x4!', 5: '🌟 COMBO x5!' };
             const el = document.createElement('div');
             el.className = 'combo-badge';
             el.textContent = messages[n] || `🔥 COMBO x${n}!`;
@@ -722,7 +1190,7 @@
             document.getElementById('level-score').textContent = score;
             const perfect = document.getElementById('perfect-badge');
             if (correctCount === currentQuestions.length) perfect.classList.remove('hidden'); else perfect.classList.add('hidden');
-            
+
             setLoading(true);
             if (currentUser) {
                 const res = await GameStorage.saveLevelScore(currentUser.phone, currentLevelIndex, score);
@@ -785,11 +1253,12 @@
             MusicManager.play('menu');
         }
         function goToStartScreen() { showStartScreen(); }
-        function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
+        function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; } }
 
         // Init
         lucide.createIcons();
         showLogin();
     </script>
 </body>
+
 </html>
